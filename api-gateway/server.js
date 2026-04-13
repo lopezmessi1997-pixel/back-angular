@@ -5,9 +5,9 @@ const proxy          = require('./proxy');
 const R              = require('./response');
 const { onRequestHook, onResponseHook, onErrorHook } = require('./logger');
 
-const MS_USERS   = process.env.MS_USERS_URL   || 'http://localhost:3001';
-const MS_TICKETS = process.env.MS_TICKETS_URL || 'http://localhost:3002';
-const MS_GROUPS  = process.env.MS_GROUPS_URL  || 'http://localhost:3003';
+const MS_USERS   = process.env.MS_USERS_URL   || 'http://127.0.0.1:3001';
+const MS_TICKETS = process.env.MS_TICKETS_URL || 'http://127.0.0.1:3002';
+const MS_GROUPS  = process.env.MS_GROUPS_URL  || 'http://127.0.0.1:3003';
 
 async function start() {
   // ── CORS ───────────────────────────────────────────────────────────────────
