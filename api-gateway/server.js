@@ -14,9 +14,9 @@ async function start() {
   await fastify.register(require('@fastify/cors'), {
     origin: (origin, cb) => {
       const allowed = [
-        'http://localhost:4200',
-        'https://angular-coral-nu.vercel.app/',
-      ];
+  'http://localhost:4200',
+  'https://angular-coral-nu.vercel.app',
+];
       if (!origin || allowed.includes(origin)) {
         cb(null, true);
       } else {
