@@ -15,7 +15,7 @@ async function start() {
     origin: (origin, cb) => {
       const allowed = [
         'http://localhost:4200',
-        'https://angular-git-main-alanlm18s-projects.vercel.app',
+        'https://angular-coral-nu.vercel.app/',
       ];
       if (!origin || allowed.includes(origin)) {
         cb(null, true);
