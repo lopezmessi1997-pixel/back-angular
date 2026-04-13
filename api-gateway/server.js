@@ -96,7 +96,10 @@ async function start() {
 
   // ── INICIAR ────────────────────────────────────────────────────────────────
   try {
-    await fastify.listen({ port: process.env.PORT || 3000, host: '0.0.0.0' });
+    await fastify.listen({ 
+  port: Number(process.env.PORT) || 3000,  // ← forzar a número
+  host: '0.0.0.0' 
+});
     console.log(`API Gateway corriendo en http://localhost:${process.env.PORT || 3000}`);
   } catch (err) {
     fastify.log.error(err);
