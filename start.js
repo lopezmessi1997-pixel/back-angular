@@ -1,9 +1,9 @@
 require('dotenv').config();
 
 // levantar microservicios internos
-require('./microservices/users/Server')
-require('./microservices/tickets/Server')
-require('./microservices/groups/Server')
+require('./microservices/users/server')
+require('./microservices/tickets/server')
+require('./microservices/groups/server')
 
 // levantar gateway
-require('./api-gateway/Server');
+require('./api-gateway/server');
