@@ -86,11 +86,11 @@ async function groupsRoutes(fastify) {
 
 
   // GET /api/groups/my — grupos del usuario logueado
-fastify.get('/api/groups/my', async (req, reply) => {
+fastify.get('/my', async (req, reply) => {
   const userId = req.user?.userId;
   if (!userId) return reply.status(401).send(R.unauth('Usuario no autenticado.'));
 
-  const { data, error } = await supabase
+  const { data, error } = await supa
     .from('group_members')
     .select('role, groups(id, nombre, nivel, descripcion, autor, created_at)')
     .eq('user_id', userId);
