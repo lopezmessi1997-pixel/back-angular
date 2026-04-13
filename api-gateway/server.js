@@ -12,9 +12,9 @@ const MS_GROUPS  = process.env.MS_GROUPS_URL  || 'http://127.0.0.1:3003';
 async function start() {
   // ── CORS ───────────────────────────────────────────────────────────────────
   await fastify.register(require('@fastify/cors'), {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-});
+    origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  });
 
   // ── RATE LIMITING ──────────────────────────────────────────────────────────
   await fastify.register(require('@fastify/rate-limit'), {
@@ -96,11 +96,11 @@ async function start() {
 
   // ── INICIAR ────────────────────────────────────────────────────────────────
   try {
-    await fastify.listen({ 
-  port: Number(process.env.PORT) || 3000,  // ← forzar a número
-  host: '0.0.0.0' 
-});
-    console.log(`API Gateway corriendo en http://localhost:${process.env.PORT || 3000}`);
+    await fastify.listen({
+      port: Number(process.env.PORT) || 8080,
+      host: '0.0.0.0',
+    });
+    console.log(`API Gateway corriendo en http://localhost:${process.env.PORT || 8080}`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
