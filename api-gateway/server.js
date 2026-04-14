@@ -94,6 +94,7 @@ async function start() {
   fastify.delete('/api/tickets/:id',          async (req, reply) => proxy(req, reply, MS_TICKETS));
 
   // ── GROUPS ─────────────────────────────────────────────────────────────────
+  fastify.get('/api/groups/my', async (req, reply) => proxy(req, reply, MS_GROUPS));
   fastify.get('/api/groups',                           async (req, reply) => proxy(req, reply, MS_GROUPS));
   fastify.get('/api/groups/:id/members',               async (req, reply) => proxy(req, reply, MS_GROUPS));
   fastify.get('/api/groups/:id/permissions/:userId',   async (req, reply) => proxy(req, reply, MS_GROUPS));

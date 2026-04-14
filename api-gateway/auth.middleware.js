@@ -16,6 +16,7 @@ const PERMISSIONS_MAP = {
   'GET /groups/:id/members':              'group:view',
   'GET /groups/:id/permissions/:userId':  'group:view',
   'POST /groups':                         'group:add',
+  'GET /groups/my': 'group:view',
   'POST /groups/:id/members':             'group:edit',
   'POST /groups/:id/permissions':         'group:edit',
   'PUT /groups/:id':                      'group:edit',
