@@ -11,13 +11,8 @@ const PERMISSIONS_MAP = {
   'DELETE /tickets/:id':         'ticket:delete',
   'POST /tickets/:id/comments':  'ticket:view',
 
-  // ── GRUPOS — escritura requiere permiso, lectura solo token ───────────────
-  'POST /groups':                       'group:add',
-  'POST /groups/:id/members':           'group:edit',
-  'POST /groups/:id/permissions':       'group:edit',
-  'PUT /groups/:id':                    'group:edit',
-  'DELETE /groups/:id/members/:userId': 'group:edit',
-  'DELETE /groups/:id':                 'group:delete',
+  // ── GRUPOS — permisos validados internamente en el MS de grupos ───────────
+  // (no se registran aquí porque son permisos por grupo, no globales)
 
   // ── USUARIOS ──────────────────────────────────────────────────────────────
   'GET /users':        'user:view',
@@ -27,7 +22,6 @@ const PERMISSIONS_MAP = {
   'DELETE /users/:id': 'user:delete',
 };
 
-// Rutas que NO requieren token
 const PUBLIC_ROUTES = [
   'POST /auth/login',
   'POST /auth/register',
@@ -36,11 +30,8 @@ const PUBLIC_ROUTES = [
 
 function matchPermission(method, path) {
   const key = `${method} ${path}`;
-
-  // Coincidencia exacta
   if (PERMISSIONS_MAP[key]) return PERMISSIONS_MAP[key];
 
-  // Coincidencia con patrones :param
   for (const pattern of Object.keys(PERMISSIONS_MAP)) {
     const [pMethod, pPath] = pattern.split(' ');
     if (pMethod !== method) continue;
@@ -62,10 +53,8 @@ async function authMiddleware(req, reply) {
   const method = req.method;
   const path   = req.url.split('?')[0].replace(/^\/api/, '');
 
-  // Rutas públicas — no requieren token
   if (isPublic(method, path)) return;
 
-  // Verificar Authorization header
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return reply.status(401).send(R.unauth('Token requerido.'));
@@ -75,11 +64,13 @@ async function authMiddleware(req, reply) {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.user = payload;
+
+    // Inyectar x-user-id para que el proxy lo reenvíe a los microservicios
+    req.headers['x-user-id'] = String(payload.userId ?? payload.id ?? '');
   } catch (err) {
     return reply.status(401).send(R.unauth('Token inválido o expirado.'));
   }
 
-  // Verificar permiso requerido para el endpoint
   const required = matchPermission(method, path);
   if (required) {
     const userPerms = req.user.perms ?? [];
