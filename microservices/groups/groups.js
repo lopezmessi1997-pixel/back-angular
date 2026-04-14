@@ -115,11 +115,15 @@ async function groupsRoutes(fastify) {
 
   // GET /groups/:id/permissions/:userId — permisos de un usuario en ese grupo
   fastify.get('/:id/permissions/:userId', async (req, reply) => {
+    // FIX: convertir a número para evitar comparaciones string vs integer en Postgres
+    const group_id = Number(req.params.id);
+    const user_id  = Number(req.params.userId);
+
     const { data, error } = await supa
       .from('user_permissions')
       .select('permissions(code, description)')
-      .eq('user_id', req.params.userId)
-      .eq('group_id', req.params.id);
+      .eq('user_id', user_id)
+      .eq('group_id', group_id);
 
     if (error) return reply.status(500).send(R.serverErr(error.message));
 
@@ -128,7 +132,7 @@ async function groupsRoutes(fastify) {
       description: up.permissions.description,
     })) ?? [];
 
-    return reply.send(R.ok({ user_id: req.params.userId, group_id: req.params.id, perms }, 'SxGR200'));
+    return reply.send(R.ok({ user_id, group_id, perms }, 'SxGR200'));
   });
 
   // POST /groups — crear grupo
@@ -158,23 +162,46 @@ async function groupsRoutes(fastify) {
   // POST /groups/:id/permissions — asignar permisos a usuario en ese grupo
   fastify.post('/:id/permissions', permSchema, async (req, reply) => {
     const { user_id, perm_codes } = req.body;
+
+    // FIX: convertir explícitamente a número — req.params.id siempre llega como string
+    // Supabase puede guardar NULL si recibe un string donde espera integer
     const group_id = Number(req.params.id);
 
-    // Eliminar solo los permisos de ESE grupo para ESE usuario
-    await supa.from('user_permissions')
+    // Eliminar permisos anteriores de ESE usuario en ESE grupo
+    const { error: deleteError } = await supa
+      .from('user_permissions')
       .delete()
       .eq('user_id', user_id)
       .eq('group_id', group_id);
 
-    if (perm_codes.length) {
-      const { data: perms } = await supa.from('permissions').select('id').in('code', perm_codes);
-      if (perms?.length)
-        await supa.from('user_permissions').insert(
-          perms.map(p => ({ user_id, permission_id: p.id, group_id }))
-        );
+    if (deleteError) return reply.status(500).send(R.serverErr(deleteError.message));
+
+    // Insertar nuevos permisos si hay códigos
+    if (perm_codes.length > 0) {
+      const { data: perms, error: permError } = await supa
+        .from('permissions')
+        .select('id, code')
+        .in('code', perm_codes);
+
+      if (permError) return reply.status(500).send(R.serverErr(permError.message));
+
+      if (perms?.length) {
+        // FIX: group_id es Number, user_id viene del body ya como integer (validado por schema)
+        const rows = perms.map(p => ({
+          user_id:       user_id,
+          permission_id: p.id,
+          group_id:      group_id,   // ← number explícito, no string
+        }));
+
+        const { error: insertError } = await supa
+          .from('user_permissions')
+          .insert(rows);
+
+        if (insertError) return reply.status(500).send(R.serverErr(insertError.message));
+      }
     }
 
-    return reply.send(R.ok({ message: 'Permisos actualizados.' }, 'SxGR200'));
+    return reply.send(R.ok({ message: 'Permisos actualizados.', group_id, user_id, total: perm_codes.length }, 'SxGR200'));
   });
 
   // PUT /groups/:id — editar grupo
