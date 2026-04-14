@@ -83,6 +83,24 @@ async function groupsRoutes(fastify) {
     return reply.send(R.ok(data, 'SxGR200'));
   });
 
+
+
+  // GET /api/groups/my — grupos del usuario logueado
+fastify.get('/my', async (req, reply) => {
+  const userId = req.user?.userId;
+  if (!userId) return reply.status(401).send(R.unauth('Usuario no autenticado.'));
+
+  const { data, error } = await supa
+    .from('group_members')
+    .select('role, groups(id, nombre, nivel, descripcion, autor, created_at)')
+    .eq('user_id', userId);
+
+  if (error) return reply.status(500).send(R.serverErr(error.message));
+
+  const groups = data?.map(m => ({ ...m.groups, my_role: m.role })) ?? [];
+  return reply.send(R.ok(groups));
+});
+
   // GET /groups/:id/permissions/:userId — permisos de un usuario en el grupo
   fastify.get('/:id/permissions/:userId', async (req, reply) => {
     const { data, error } = await supa
