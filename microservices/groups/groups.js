@@ -61,7 +61,7 @@ const permSchema = {
 
 async function groupsRoutes(fastify) {
 
-  // GET /groups — todos los grupos con conteos
+  // GET /groups — todos los grupos
   fastify.get('/', async (req, reply) => {
     const { data, error } = await supa
       .from('groups')
@@ -70,6 +70,23 @@ async function groupsRoutes(fastify) {
 
     if (error) return reply.status(500).send(R.serverErr(error.message));
     return reply.send(R.ok(data, 'SxGR200'));
+  });
+
+  // GET /groups/my — grupos del usuario logueado (ANTES de /:id)
+  fastify.get('/my', async (req, reply) => {
+    const userId = req.headers['x-user-id'];
+
+    if (!userId) return reply.status(401).send(R.unauth('Usuario no autenticado.'));
+
+    const { data, error } = await supa
+      .from('group_members')
+      .select('role, groups(id, nombre, nivel, descripcion, autor, created_at)')
+      .eq('user_id', userId);
+
+    if (error) return reply.status(500).send(R.serverErr(error.message));
+
+    const groups = data?.map(row => ({ ...row.groups, my_role: row.role })) ?? [];
+    return reply.send(R.ok(groups, 'SxGR200'));
   });
 
   // GET /groups/:id/members — miembros del grupo
@@ -83,24 +100,6 @@ async function groupsRoutes(fastify) {
     return reply.send(R.ok(data, 'SxGR200'));
   });
 
-
-
-  // GET /api/groups/my — grupos del usuario logueado
-fastify.get('/my', async (req, reply) => {
-  const userId = req.user?.userId;
-  if (!userId) return reply.status(401).send(R.unauth('Usuario no autenticado.'));
-
-  const { data, error } = await supa
-    .from('group_members')
-    .select('role, groups(id, nombre, nivel, descripcion, autor, created_at)')
-    .eq('user_id', userId);
-
-  if (error) return reply.status(500).send(R.serverErr(error.message));
-
-  const groups = data?.map(m => ({ ...m.groups, my_role: m.role })) ?? [];
-  return reply.send(R.ok(groups));
-});
-
   // GET /groups/:id/permissions/:userId — permisos de un usuario en el grupo
   fastify.get('/:id/permissions/:userId', async (req, reply) => {
     const { data, error } = await supa
@@ -112,23 +111,6 @@ fastify.get('/my', async (req, reply) => {
     const perms = data?.map(up => up.permissions.code) ?? [];
     return reply.send(R.ok({ user_id: req.params.userId, group_id: req.params.id, perms }, 'SxGR200'));
   });
-
-  // GET /groups/my — grupos donde el usuario autenticado es miembro
-fastify.get('/my', async (req, reply) => {
-  const userId = req.headers['x-user-id'];
-
-  if (!userId) return reply.status(400).send(R.badReq('User ID requerido.'));
-
-  const { data, error } = await supa
-    .from('group_members')
-    .select('role, groups(id, nombre, nivel, descripcion, autor, created_at)')
-    .eq('user_id', userId);
-
-  if (error) return reply.status(500).send(R.serverErr(error.message));
-
-  const groups = data?.map(row => ({ ...row.groups, role: row.role })) ?? [];
-  return reply.send(R.ok(groups, 'SxGR200'));
-});
 
   // POST /groups — crear grupo
   fastify.post('/', createSchema, async (req, reply) => {
@@ -158,7 +140,6 @@ fastify.get('/my', async (req, reply) => {
   fastify.post('/:id/permissions', permSchema, async (req, reply) => {
     const { user_id, perm_codes } = req.body;
 
-    // Reemplazar permisos
     await supa.from('user_permissions').delete().eq('user_id', user_id);
 
     if (perm_codes.length) {
