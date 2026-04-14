@@ -1,9 +1,8 @@
 const jwt = require('jsonwebtoken');
 const R   = require('./response');
 
-// Mapa de permisos requeridos por endpoint
-// formato: 'METHOD /ruta' => 'permiso_requerido'
 const PERMISSIONS_MAP = {
+  // ── TICKETS ───────────────────────────────────────────────────────────────
   'GET /tickets/group/:groupId': 'ticket:view',
   'GET /tickets/:id':            'ticket:view',
   'POST /tickets':               'ticket:add',
@@ -12,21 +11,19 @@ const PERMISSIONS_MAP = {
   'DELETE /tickets/:id':         'ticket:delete',
   'POST /tickets/:id/comments':  'ticket:view',
 
-  'GET /groups':                          'group:view',
-  'GET /groups/:id/members':              'group:view',
-  'GET /groups/:id/permissions/:userId':  'group:view',
-  'POST /groups':                         'group:add',
-  'GET /groups/my': 'group:view',
-  'POST /groups/:id/members':             'group:edit',
-  'POST /groups/:id/permissions':         'group:edit',
-  'PUT /groups/:id':                      'group:edit',
-  'DELETE /groups/:id/members/:userId':   'group:edit',
-  'DELETE /groups/:id':                   'group:delete',
+  // ── GRUPOS — escritura requiere permiso, lectura solo token ───────────────
+  'POST /groups':                       'group:add',
+  'POST /groups/:id/members':           'group:edit',
+  'POST /groups/:id/permissions':       'group:edit',
+  'PUT /groups/:id':                    'group:edit',
+  'DELETE /groups/:id/members/:userId': 'group:edit',
+  'DELETE /groups/:id':                 'group:delete',
 
-  'GET /users':     'user:view',
-  'GET /users/:id': 'user:view',
-  'POST /users':    'user:add',
-  'PUT /users/:id': 'user:edit',
+  // ── USUARIOS ──────────────────────────────────────────────────────────────
+  'GET /users':        'user:view',
+  'GET /users/:id':    'user:view',
+  'POST /users':       'user:add',
+  'PUT /users/:id':    'user:edit',
   'DELETE /users/:id': 'user:delete',
 };
 

@@ -89,6 +89,19 @@ async function groupsRoutes(fastify) {
     return reply.send(R.ok(groups, 'SxGR200'));
   });
 
+  // GET /groups/user/:userId — grupos de un usuario específico (admin/superadmin)
+  fastify.get('/user/:userId', async (req, reply) => {
+    const { data, error } = await supa
+      .from('group_members')
+      .select('role, groups(id, nombre, nivel, descripcion, autor, created_at)')
+      .eq('user_id', req.params.userId);
+
+    if (error) return reply.status(500).send(R.serverErr(error.message));
+
+    const groups = data?.map(row => ({ ...row.groups, my_role: row.role })) ?? [];
+    return reply.send(R.ok(groups, 'SxGR200'));
+  });
+
   // GET /groups/:id/members — miembros del grupo
   fastify.get('/:id/members', async (req, reply) => {
     const { data, error } = await supa
@@ -100,15 +113,21 @@ async function groupsRoutes(fastify) {
     return reply.send(R.ok(data, 'SxGR200'));
   });
 
-  // GET /groups/:id/permissions/:userId — permisos de un usuario en el grupo
+  // GET /groups/:id/permissions/:userId — permisos de un usuario en ese grupo
   fastify.get('/:id/permissions/:userId', async (req, reply) => {
     const { data, error } = await supa
       .from('user_permissions')
-      .select('permissions(code)')
-      .eq('user_id', req.params.userId);
+      .select('permissions(code, description)')
+      .eq('user_id', req.params.userId)
+      .eq('group_id', req.params.id);
 
     if (error) return reply.status(500).send(R.serverErr(error.message));
-    const perms = data?.map(up => up.permissions.code) ?? [];
+
+    const perms = data?.map(up => ({
+      code:        up.permissions.code,
+      description: up.permissions.description,
+    })) ?? [];
+
     return reply.send(R.ok({ user_id: req.params.userId, group_id: req.params.id, perms }, 'SxGR200'));
   });
 
@@ -136,16 +155,23 @@ async function groupsRoutes(fastify) {
     return reply.status(201).send(R.created({ message: 'Miembro añadido.' }, 'SxGR201'));
   });
 
-  // POST /groups/:id/permissions — asignar permisos a usuario en grupo
+  // POST /groups/:id/permissions — asignar permisos a usuario en ese grupo
   fastify.post('/:id/permissions', permSchema, async (req, reply) => {
     const { user_id, perm_codes } = req.body;
+    const group_id = Number(req.params.id);
 
-    await supa.from('user_permissions').delete().eq('user_id', user_id);
+    // Eliminar solo los permisos de ESE grupo para ESE usuario
+    await supa.from('user_permissions')
+      .delete()
+      .eq('user_id', user_id)
+      .eq('group_id', group_id);
 
     if (perm_codes.length) {
       const { data: perms } = await supa.from('permissions').select('id').in('code', perm_codes);
       if (perms?.length)
-        await supa.from('user_permissions').insert(perms.map(p => ({ user_id, permission_id: p.id })));
+        await supa.from('user_permissions').insert(
+          perms.map(p => ({ user_id, permission_id: p.id, group_id }))
+        );
     }
 
     return reply.send(R.ok({ message: 'Permisos actualizados.' }, 'SxGR200'));

@@ -95,6 +95,7 @@ async function start() {
 
   // ── GROUPS ─────────────────────────────────────────────────────────────────
   fastify.get('/api/groups/my', async (req, reply) => proxy(req, reply, MS_GROUPS));
+  fastify.get('/api/groups/user/:userId', async (req, reply) => proxy(req, reply, MS_GROUPS));
   fastify.get('/api/groups',                           async (req, reply) => proxy(req, reply, MS_GROUPS));
   fastify.get('/api/groups/:id/members',               async (req, reply) => proxy(req, reply, MS_GROUPS));
   fastify.get('/api/groups/:id/permissions/:userId',   async (req, reply) => proxy(req, reply, MS_GROUPS));
